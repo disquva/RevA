@@ -1,0 +1,7 @@
+.*
+/*.*
+!RevAFullAssembly.ioc
+!README.md
+!.gitignore
+/Debug
+/Drivers
