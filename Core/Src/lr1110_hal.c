@@ -79,10 +79,10 @@ lr1110_hal_status_t lr1110_hal_write( const void* radio, const uint8_t* cbuffer,
 
     HAL_GPIO_WritePin(radio_local->nss.port, radio_local->nss.pin, GPIO_PIN_RESET);
     hal_status = HAL_SPI_Transmit(radio_local->hspi, cbuffer, cbuffer_length, 10);
-    hal_status = HAL_SPI_Transmit(radio_local->hspi, cdata, cdata_length, 10) & hal_status;
+    hal_status = HAL_SPI_Transmit(radio_local->hspi, cdata, cdata_length, 10) | hal_status;
     HAL_GPIO_TogglePin(radio_local->nss.port, radio_local->nss.pin);
 
-    return LR1110_HAL_STATUS_OK & hal_status;
+    return LR1110_HAL_STATUS_OK | hal_status;
 }
 
 lr1110_hal_status_t lr1110_hal_wakeup( const void* radio )
