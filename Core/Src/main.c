@@ -124,7 +124,7 @@ int main(void)
   // lr1110_system_version_t version = {0};
   // lr1110_modem_version_t modem_version = { 0 };
 
-  // lr1110_status_t lr_status = LR1110_STATUS_ERROR;
+  lr1110_status_t lr_status = LR1110_STATUS_ERROR;
 
   // lr1110_system_stat1_t lr_stat1;
   // lr1110_system_stat2_t lr_stat2;
@@ -152,7 +152,7 @@ int main(void)
   // Rebooting into bootstrap
   lr1110_bootloader_reboot( &radio, true );
   HAL_Delay(500);
-  //lr1110_system_clear_errors(&radio);
+  // lr1110_system_clear_errors(&radio);
   lr1110_bootloader_get_version(&radio, &version_system);
   // lr1110_modem_get_version(&radio, &modem);
 
@@ -160,20 +160,20 @@ int main(void)
   lr1110_bootloader_get_version(&radio, &version_system);
 
   // STEP 1
-  lr_status = lr1110_bootloader_write_flash_full( &radio, 0, lr1110_firmware_image, ( uint32_t ) LR1110_FIRMWARE_IMAGE_SIZE );
+  lr_status = lr1110_bootloader_write_flash_encrypted_full( &radio, 0, lr1110_firmware_image, ( uint32_t ) LR1110_FIRMWARE_IMAGE_SIZE );
 
   // STEP 2 - offset is taken from STEP 1
-  // lr_status = lr1110_bootloader_write_flash_full( &radio, 163328, lr1110_firmware_image, ( uint32_t ) LR1110_FIRMWARE_IMAGE_SIZE );
+  // lr_status = lr1110_bootloader_write_flash_encrypted_full( &radio, 163328, lr1110_firmware_image, ( uint32_t ) LR1110_FIRMWARE_IMAGE_SIZE );
 
   // lr1110_system_get_status(&radio, &lr_stat1, &lr_stat2, &lr_irq_status);
   // lr1110_system_get_errors(&radio, &lr_errors);
 
   // Rebooting out of bootstrap
-  lr1110_bootloader_reboot( &radio, false );
+  // lr1110_bootloader_reboot( &radio, false );
   // lr1110_modem_system_reboot(&radio, false);
-  HAL_Delay(2500);
+  // HAL_Delay(2500);
 
-  lr1110_bootloader_get_version(&radio, &version_system);
+  // lr1110_bootloader_get_version(&radio, &version_system);
   // lr1110_modem_get_version(&radio, &modem);
   /**/
 
@@ -183,13 +183,14 @@ int main(void)
   /* USER CODE END 2 */
 
   /* Infinite loop */
+
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+  //while (1)
+  //{
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+  //}
   /* USER CODE END 3 */
 }
 
