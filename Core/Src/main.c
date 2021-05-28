@@ -26,18 +26,25 @@
 // Switch includes based on the step to run
 // STEP 1
 #include "lr1110_modem_1.0.7_part-1.h"
+// #include "lr_1110_transceiver_304_part-1.h"
 
 // STEP 2
-// #include "lr1110_modem_1.0.7_part-2.h"
+#include "lr1110_modem_1.0.7_part-2.h"
+// #include "lr_1110_transceiver_304_part-2.h"
 
 #include "configuration.h"
 #include "lr1110_bootloader.h"
-// #include "lr1110_system.h"
-// #include "lr1110_modem_system.h"
-// #include "lr1110_modem_lorawan.h"
+#include "lr1110_system.h"
+#include "lr1110_system_types.h"
 #include "system.h"
 
-// #include "lr1110_firmware_update.h"
+#include "lr1110_wifi.h"
+#include "lr1110_wifi_types.h"
+#include "lr1110_gnss.h"
+#include "lr1110_gnss_types.h"
+
+#include "lr1110_modem_system.h"
+#include "lr1110_modem_lorawan.h"
 
 /* USER CODE END Includes */
 
@@ -120,61 +127,180 @@ int main(void)
   };
 
   lr1110_bootloader_version_t version_system = { 0 };
+  lr1110_modem_version_t modem_version = { 0 };
 
-  // lr1110_system_version_t version = {0};
-  // lr1110_modem_version_t modem_version = { 0 };
+  //  lr1110_modem_status_t modem_status = { 0 };
+//  lr1110_modem_response_code_t modem_return;
+//  lr1110_modem_event_fields_t modem_event;
+
+  lr1110_system_stat1_t lr_stat1;
+  lr1110_system_stat2_t lr_stat2;
+  lr1110_system_irq_mask_t lr_irq_status;
+  lr1110_system_errors_t lr_errors;
 
   lr1110_status_t lr_status = LR1110_STATUS_ERROR;
 
-  // lr1110_system_stat1_t lr_stat1;
-  // lr1110_system_stat2_t lr_stat2;
-  // lr1110_system_irq_mask_t lr_irq_status;
-  // lr1110_system_errors_t lr_errors;
+  // lr1110_modem_chip_eui_t chip_eui;
 
-  // lr1110_hal_reset( &radio );
-  // lr1110_bootloader_reboot(&radio, false);
-  // HAL_Delay(500);
-  // lr1110_system_get_version(&radio, &version);
-  // lr1110_bootloader_get_version(&radio, &version_system);
-  // lr1110_modem_get_version( &radio, &modem_version );
-  // lr1110_system_get_status(&radio, &lr_stat1, &lr_stat2, &lr_irq_status);
-  // lr1110_system_get_errors(&radio, &lr_errors);
+
+/*
+  lr1110_hal_reset( &radio );
+  lr1110_bootloader_reboot(&radio, false);
+  HAL_Delay(2500);
+  lr1110_bootloader_get_version(&radio, &version_system);
+  lr1110_modem_get_version( &radio, &modem_version );
+  modem_return = lr1110_modem_suspend( &radio, LR1110_MODEM_RESUMED);
+  modem_return = lr1110_modem_get_status( &radio, &modem_status );
+  modem_return = lr1110_modem_get_chip_eui( &radio, &chip_eui );
+  lr1110_modem_system_reboot( &radio, false );
+  lr1110_bootloader_get_version(&radio, &version_system);
+  lr1110_modem_get_version( &radio, &modem_version );
+*/
+
+  /* START GNSS test */
+  /*
+  lr1110_hal_reset( &radio );
+  HAL_GPIO_TogglePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
+  HAL_Delay(500);
+  HAL_GPIO_TogglePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
+  // lr1110_modem_get_version(&radio, &modem_version);
+  lr1110_bootloader_get_version(&radio, &version_system);
+  lr_status = lr1110_system_get_version(&radio, &version);
+
+  lr_status = lr1110_system_get_status(&radio, &lr_stat1, &lr_stat2, &lr_irq_status);
+  lr_status = lr1110_system_get_errors(&radio, &lr_errors);
+
+  lr_status = lr1110_system_set_reg_mode(&radio, LR1110_SYSTEM_REG_MODE_DCDC);
+
+  lr1110_system_rfswitch_cfg_t rf_switch_setup = { 0 };
+  rf_switch_setup.enable                       = LR1110_SYSTEM_RFSW2_HIGH;
+  rf_switch_setup.standby                      = 0xFF;
+  rf_switch_setup.tx                           = 0x00;
+  rf_switch_setup.tx_hp                        = 0x00;
+  rf_switch_setup.rx                           = 0x00;
+  rf_switch_setup.wifi                         = 0x00;
+  rf_switch_setup.gnss                         = LR1110_SYSTEM_RFSW2_HIGH;
+
+  lr_status = lr1110_system_set_dio_as_rf_switch(&radio, &rf_switch_setup);
+
+  lr_status = lr1110_system_cfg_lfclk(&radio, LR1110_SYSTEM_LFCLK_XTAL, true);
+  lr_status = lr1110_system_set_tcxo_mode(&radio, LR1110_SYSTEM_TCXO_CTRL_1_8V, 500);
+  lr_status = lr1110_system_calibrate(&radio, 0x3F);
+
+  uint32_t local_time = 1614157841;
+  uint16_t gnss_result_size = 0;
+  uint8_t gnss_results[LR1110_GNSS_MAX_SIZE_ARRAY] = { 0 };
+  uint8_t nb_sv_detected = 0;
+  lr1110_gnss_detected_satellite_t list_of_sv[32] = { 0 };
+
+  lr_status = lr1110_gnss_set_constellations_to_use(&radio, LR1110_GNSS_GPS_MASK + LR1110_GNSS_BEIDOU_MASK);
+
+  while (!nb_sv_detected)
+  {
+	  HAL_GPIO_TogglePin(RED_LED_GPIO_Port, RED_LED_Pin);
+	  lr_status = lr1110_gnss_scan_autonomous(&radio, local_time, LR1110_GNSS_OPTION_BEST_EFFORT, LR1110_GNSS_BIT_CHANGE_MASK | LR1110_GNSS_DOPPLER_MASK | LR1110_GNSS_IRQ_PSEUDO_RANGE_MASK, 0);
+	  lr_status = lr1110_gnss_get_result_size(&radio, &gnss_result_size);
+	  lr_status = lr1110_gnss_read_results(&radio, gnss_results, gnss_result_size);
+	  lr_status = lr1110_gnss_get_nb_detected_satellites(&radio, &nb_sv_detected );
+	  lr_status = lr1110_gnss_get_detected_satellites(&radio, nb_sv_detected, list_of_sv);
+
+	  HAL_GPIO_TogglePin(RED_LED_GPIO_Port, RED_LED_Pin);
+	  HAL_Delay(5000);
+  }
+
+  int i;
+
+  for (i = 0; i < nb_sv_detected; ++i)
+  {
+	  HAL_GPIO_TogglePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
+	  HAL_Delay(500);
+	  HAL_GPIO_TogglePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
+  }
+
+
+
+  HAL_Delay(5000);
+  */
+
+  /* END GNSS test */
+
+  /*
+  // lr1110_wifi_channel_mask_t channels = LR1110_WIFI_CHANNEL_1_MASK + LR1110_WIFI_CHANNEL_2_MASK + LR1110_WIFI_CHANNEL_3_MASK + LR1110_WIFI_CHANNEL_4_MASK + LR1110_WIFI_CHANNEL_5_MASK + LR1110_WIFI_CHANNEL_6_MASK;
+  lr1110_wifi_channel_mask_t channels = 0b0011111111111111;
+  lr_status = lr1110_wifi_scan(&radio, LR1110_WIFI_TYPE_SCAN_B_G_N, channels, LR1110_WIFI_SCAN_MODE_FULL_BEACON, 16, 4, 110, false);
+
+  lr_status = lr1110_system_get_errors(&radio, &lr_errors);
+
+  uint8_t nb_results = 0;
+  lr1110_wifi_get_nb_results(&radio, &nb_results);
+  lr1110_wifi_extended_full_result_t all_results[LR1110_WIFI_MAX_RESULTS] = {0};
+  lr1110_wifi_read_extended_full_results(&radio, 0, nb_results, all_results);
+  */
+
+
+
 
   // lr1110_hal_wakeup( &radio );
-
-  // HAL_Delay(500);
+//  HAL_GPIO_TogglePin(RED_LED_GPIO_Port, RED_LED_Pin);
+//  HAL_Delay(500);
+//  HAL_GPIO_TogglePin(RED_LED_GPIO_Port, RED_LED_Pin);
+//  HAL_GPIO_TogglePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
+//  HAL_Delay(500);
+//  HAL_GPIO_TogglePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
 
   // lr1110_system_set_tcxo_mode(&radio, LR1110_SYSTEM_TCXO_CTRL_1_6V, 10000);
 
   // lr1110_hal_bootstrap( &radio );
 
 
+  /* START LR1110 Firmware Update */
   // Rebooting into bootstrap
-  lr1110_bootloader_reboot( &radio, true );
+  lr1110_hal_bootstrap( &radio );
+  lr1110_hal_reset( &radio );
   HAL_Delay(500);
-  // lr1110_system_clear_errors(&radio);
   lr1110_bootloader_get_version(&radio, &version_system);
-  // lr1110_modem_get_version(&radio, &modem);
 
+  if( version_system.type != 0xDF )
+  {
+	lr1110_bootloader_reboot( &radio, true );
+	HAL_Delay(500);
+  }
+
+  /*
+  lr1110_bootloader_get_version(&radio, &version_system);
+  lr1110_hal_bootstrap(&radio);
+  lr1110_bootloader_get_version(&radio, &version_system);
+  lr1110_modem_get_version(&radio, &modem);
+  */
+
+  // STEP 1
   lr1110_bootloader_erase_flash( &radio );
   lr1110_bootloader_get_version(&radio, &version_system);
 
-  // STEP 1
   lr_status = lr1110_bootloader_write_flash_encrypted_full( &radio, 0, lr1110_firmware_image, ( uint32_t ) LR1110_FIRMWARE_IMAGE_SIZE );
+  lr1110_hal_reset( &radio );
+  lr1110_bootloader_get_version(&radio, &version_system);
 
   // STEP 2 - offset is taken from STEP 1
-  // lr_status = lr1110_bootloader_write_flash_encrypted_full( &radio, 163328, lr1110_firmware_image, ( uint32_t ) LR1110_FIRMWARE_IMAGE_SIZE );
+  lr_status = lr1110_bootloader_write_flash_encrypted_full( &radio, 163328, lr1110_firmware_image, ( uint32_t ) LR1110_FIRMWARE_IMAGE_SIZE );
 
-  // lr1110_system_get_status(&radio, &lr_stat1, &lr_stat2, &lr_irq_status);
-  // lr1110_system_get_errors(&radio, &lr_errors);
 
   // Rebooting out of bootstrap
-  // lr1110_bootloader_reboot( &radio, false );
-  // lr1110_modem_system_reboot(&radio, false);
-  // HAL_Delay(2500);
+  lr1110_bootloader_reboot( &radio, false );
+  lr1110_modem_system_reboot(&radio, false);
+  HAL_Delay(2500);
 
-  // lr1110_bootloader_get_version(&radio, &version_system);
-  // lr1110_modem_get_version(&radio, &modem);
+  /*
+  lr1110_hal_reset( &radio );
+  lr1110_bootloader_reboot( &radio, false );
+  lr1110_bootloader_get_version(&radio, &version_system);
+  */
+  lr1110_modem_get_version(&radio, &modem_version);
+
+
+  // lr1110_bootloader_read_pin( &radio, pin );
+  // lr1110_bootloader_read_chip_eui( &radio, chip_eui );
+  // lr1110_bootloader_read_join_eui( &radio, join_eui );
   /**/
 
   // lr1110_system_get_temp(&radio, &lr_temp);
@@ -183,14 +309,19 @@ int main(void)
   /* USER CODE END 2 */
 
   /* Infinite loop */
-
   /* USER CODE BEGIN WHILE */
-  //while (1)
-  //{
+  while (1)
+  {
+    HAL_GPIO_TogglePin(RED_LED_GPIO_Port, RED_LED_Pin);
+    HAL_Delay(500);
+    HAL_GPIO_TogglePin(RED_LED_GPIO_Port, RED_LED_Pin);
+    HAL_GPIO_TogglePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
+    HAL_Delay(500);
+    HAL_GPIO_TogglePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  //}
+  }
   /* USER CODE END 3 */
 }
 
@@ -210,7 +341,7 @@ void SystemClock_Config(void)
   * in the RCC_OscInitTypeDef structure.
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_DIV4;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
@@ -225,7 +356,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV16;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
@@ -251,7 +382,7 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.Timing = 0x00000000;
+  hi2c2.Init.Timing = 0x2000090E;
   hi2c2.Init.OwnAddress1 = 0;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;

@@ -66,16 +66,12 @@ void Error_Handler(void);
 #define MOSI_GPIO_Port GPIOB
 #define QI_EN_Pin GPIO_PIN_9
 #define QI_EN_GPIO_Port GPIOB
-#define SWCLK_Pin GPIO_PIN_14
-#define SWCLK_GPIO_Port GPIOA
 #define MISO_Pin GPIO_PIN_4
 #define MISO_GPIO_Port GPIOB
 #define QI_INT_Pin GPIO_PIN_8
 #define QI_INT_GPIO_Port GPIOB
 #define GREEN_LED_Pin GPIO_PIN_10
 #define GREEN_LED_GPIO_Port GPIOA
-#define SWDIO_Pin GPIO_PIN_13
-#define SWDIO_GPIO_Port GPIOA
 #define QI_PDETB_Pin GPIO_PIN_7
 #define QI_PDETB_GPIO_Port GPIOB
 #define ACC_INT1_Pin GPIO_PIN_14

@@ -18,6 +18,7 @@ lr1110_modem_hal_status_t lr1110_modem_hal_write( const void* context, const uin
     uint8_t                   crc         = 0;
     lr1110_modem_hal_status_t rc;
 
+
     if ( HAL_GPIO_ReadPin( radio_local->busy.port, radio_local->busy.pin) == GPIO_PIN_SET ) {
     	HAL_GPIO_WritePin( radio_local->nss.port, radio_local->nss.pin, GPIO_PIN_RESET );
     	HAL_SPI_Transmit( radio_local->hspi, &crc, 1, 10 );
@@ -80,7 +81,7 @@ lr1110_modem_hal_status_t lr1110_modem_hal_read( const void* context, const uint
     crc = 0;
 
     HAL_GPIO_WritePin( radio_local->nss.port, radio_local->nss.pin, GPIO_PIN_RESET );
-    HAL_SPI_Transmit(radio_local->hspi, &dummy_byte, 1, 10);
+    // HAL_SPI_Transmit(radio_local->hspi, &dummy_byte, 1, 10);
     HAL_SPI_Receive(radio_local->hspi, ( uint8_t* ) &rc, 1, 10);
     HAL_SPI_Receive(radio_local->hspi, ( uint8_t* ) data, data_length, 10);
     HAL_SPI_Receive(radio_local->hspi, ( uint8_t* ) &crc, 1, 10);

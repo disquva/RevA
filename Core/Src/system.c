@@ -14,7 +14,7 @@ lr1110_hal_status_t lr1110_hal_bootstrap( const void* radio )
     GPIO_config.Pin = BUSY_Pin;
     GPIO_config.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_config.Pull = GPIO_NOPULL;
-    GPIO_config.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_config.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(BUSY_GPIO_Port, &GPIO_config);
 
     // set BUSY low
@@ -22,11 +22,13 @@ lr1110_hal_status_t lr1110_hal_bootstrap( const void* radio )
 
     // set NRESET low
     HAL_GPIO_WritePin(radio_local->reset.port, radio_local->reset.pin, GPIO_PIN_RESET);
-    HAL_Delay(1);
+    HAL_Delay(100);
     // set NRESET high
     HAL_GPIO_TogglePin(radio_local->reset.port, radio_local->reset.pin);
 
     HAL_Delay(500);
+
+    HAL_GPIO_TogglePin(radio_local->busy.port, radio_local->busy.pin);
 
     // set BUSY pin as input
     GPIO_config = GPIO_InitStruct;
